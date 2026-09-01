@@ -74,7 +74,11 @@ const examSchema = new mongoose.Schema({
   isPublished: {
     type: Boolean,
     default: false
-  }
+  },proctoring: {
+    webcamEnabled: { type: Boolean, default: false },
+    tabSwitchingEnabled: { type: Boolean, default: false },
+    voiceDetectionEnabled: { type: Boolean, default: false }
+  },
 }, {
   timestamps: true
 });

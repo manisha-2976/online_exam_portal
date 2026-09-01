@@ -251,7 +251,7 @@ export default function Exams() {
                               (!exam.hasSubmitted && (
                                 <Button
                                   size="sm"
-                                  onClick={() => router.push(`/exams/${exam._id}/take`)}
+                                  onClick={() => router.push(`/exams/${exam._id}/setup`)}
                                   disabled={
                                     !exam.isPublished ||
                                     new Date() < new Date(exam.startTime) ||
