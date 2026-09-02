@@ -1,0 +1,52 @@
+# Server Configuration
+NODE_ENV=development
+PORT=5001
+
+# Database Configuration
+MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/online-exam-portal?retryWrites=true&w=majority&appName=Cluster0
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRES_IN=7d
+
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Judge0 API Configuration
+JUDGE0_API_KEY=your_judge0_api_key
+JUDGE0_API_HOST=judge0-ce.p.rapidapi.com
+
+# Rate Limiting
+RATE_LIMIT_WINDOW=15
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Email Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_email_app_password
+
+# Client URL (for CORS)
+CLIENT_URL=http://localhost:3000
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+
+# AWS Configuration
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=your_aws_region
+S3_BUCKET_NAME=your_s3_bucket_name
+
+# Logging
+LOG_LEVEL=debug
+LOG_FILE=logs/app.log
+
+# Proctoring Settings
+FACE_DETECTION_THRESHOLD=0.5
+EYE_OPENNESS_THRESHOLD=0.3
+GAZE_DEVIATION_THRESHOLD=30
+AUDIO_LEVEL_THRESHOLD=50
+MAX_VIOLATIONS=3 
