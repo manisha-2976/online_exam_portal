@@ -312,30 +312,32 @@ exports.submitExam = async (req, res, next) => {
     let totalMarks = 0;
 
     // Answers are expected as an object: { questionId: selectedOptionIndex }
-    const gradedAnswers = Object.keys(answers).map(questionId => {
-      // Find the question in the populated questions array by its ID
-      const question = exam.questions.find(q => q._id.toString() === questionId);
-      if (!question) {
-           console.warn(`Question with ID ${questionId} not found in exam ${exam._id}`);
-           return null; // Skip if question not found (shouldn't happen if data is consistent)
-      }
+   const gradedAnswers = Object.keys(answers).map(questionId => {
+  const question = exam.questions.find(q => q._id.toString() === questionId);
+  if (!question) {
+    console.warn(`Question with ID ${questionId} not found in exam ${exam._id}`);
+    return null;
+  }
 
-      totalMarks += question.marks;
-      const selectedOption = answers[questionId];
+  const questionMarks = question.marks ?? 1; 
+  totalMarks += questionMarks;
 
-      // Assuming selectedOption is the index of the chosen option (0, 1, 2, ...)
-      // And question.correctAnswer is the index of the correct option
-      const isCorrect = selectedOption === question.correctAnswer;
+  const selectedOption = answers[questionId];
 
-      if (isCorrect) score += question.marks;
+ 
+  const correctOptionText = question.options?.[question.correctOption];
+  const isCorrect = selectedOption === correctOptionText;
 
-      return {
-        question: questionId,
-        selectedOption: selectedOption, // Store the index
-        isCorrect: isCorrect,
-        marksEarned: isCorrect ? question.marks : 0
-      };
-    }).filter(a => a !== null);
+  if (isCorrect) score += questionMarks;
+
+  return {
+    question: questionId,
+    selectedOption,
+    isCorrect,
+    marks: questionMarks,   
+    marksEarned: isCorrect ? questionMarks : 0
+  };
+}).filter(a => a !== null);
 
     // Calculate percentage and determine status before creating Result
     const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;

@@ -40,19 +40,30 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     let data;
     const contentType = response.headers.get('content-type');
     
+    // if (!response.ok) {
+    //   // Try to parse error response
+    //   try {
+    //     const errorData = await response.json();
+    //     console.error('Server error response:', errorData);
+    //     throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    //   } catch (e) {
+    //     if (response.status === 404) {
+    //       throw new Error(`Route not found: ${url}`);
+    //     }
+    //     throw new Error(response.statusText || 'Request failed');
+    //   }
+    // }
     if (!response.ok) {
-      // Try to parse error response
-      try {
-        const errorData = await response.json();
-        console.error('Server error response:', errorData);
-        throw new Error(errorData.message || `Request failed with status ${response.status}`);
-      } catch (e) {
-        if (response.status === 404) {
-          throw new Error(`Route not found: ${url}`);
-        }
-        throw new Error(response.statusText || 'Request failed');
-      }
-    }
+  let message;
+  try {
+    const errorData = await response.json();
+    console.error('Server error response:', errorData);
+    message = errorData?.message || `Request failed with status ${response.status}`;
+  } catch (parseErr) {
+    message = response.status === 404 ? `Route not found: ${url}` : (response.statusText || 'Request failed');
+  }
+  throw new Error(message);
+}
     
     try {
       data = contentType?.includes('application/json') 
@@ -108,7 +119,7 @@ export const authApi = {
   },
 
   getCurrentUser: async () => {
-    return fetchApi('users/me');
+    return fetchApi('auth/me');
   },
 
   logout: async () => {
@@ -181,11 +192,11 @@ export const examApi = {
       method: 'POST'
     }),
 
-  submit: (id: string, answers: any) =>
-    fetchApi(`/exams/${id}/submit`, {
-      method: 'POST',
-      body: JSON.stringify({ answers })
-    }),
+  submit: (id: string, payload: any) =>
+  fetchApi(`/exams/${id}/submit`, {
+    method: 'POST',
+    body: JSON.stringify(payload)   
+  }),
 
   getAvailableStudents: () =>
     fetchApi('/exams/available-students')
@@ -219,4 +230,61 @@ export const examApi = {
 
   getStudentSubmission: (examId: string) =>
     fetchApi(`/exams/${examId}/submission`)
+};
+
+export const proctoringApi = {
+  startSession: (candidateId: string, sessionId: string) =>
+    fetchApi('proctoring/session/start', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId }),
+    }),
+
+  heartbeat: (candidateId: string, sessionId: string) =>
+    fetchApi('proctoring/session/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId }),
+    }),
+
+  mediaStatus: (candidateId: string, sessionId: string, camera: string, microphone: string) =>
+    fetchApi('proctoring/media/status', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId, camera, microphone }),
+    }),
+
+  screenStatus: (candidateId: string, sessionId: string, screenSharing: boolean) =>
+    fetchApi('proctoring/screen/status', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId, screenSharing }),
+    }),
+
+  reconnect: (candidateId: string, sessionId: string) =>
+    fetchApi('proctoring/session/reconnect', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId }),
+    }),
+
+  getStatus: () => fetchApi('proctoring/session/status'),
+};
+
+
+export const evidenceApi = {
+  capture: (candidateId: string, sessionId: string, evidenceType: string) =>
+    fetchApi('evidence/capture', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId, evidenceType }),
+    }),
+
+  initiateUpload: (candidateId: string, sessionId: string, evidenceType: string) =>
+    fetchApi('evidence/upload/initiate', {
+      method: 'POST',
+      body: JSON.stringify({ candidateId, sessionId, evidenceType }),
+    }),
+
+  completeUpload: (uploadId: string, candidateId: string, sessionId: string) =>
+    fetchApi('evidence/upload/complete', {
+      method: 'POST',
+      body: JSON.stringify({ uploadId, candidateId, sessionId }),
+    }),
+
+  getById: (evidenceId: string) => fetchApi(`evidence/${evidenceId}`),
 };

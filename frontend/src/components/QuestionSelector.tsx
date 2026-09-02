@@ -128,7 +128,7 @@ export default function QuestionSelector({ selectedQuestions, onQuestionsChange,
                     disabled={!isQuestionSelectable(question) && !selectedQuestions.includes(question._id)}
                   />
                   <div className="question-content">
-                    <div className="question-title">{question.title}</div>
+                    <div className="question-title">{question.text}</div>
                     <div className="question-details">
                       <span className="capitalize">{question.difficulty}</span> • {question.marks} marks
                     </div>
