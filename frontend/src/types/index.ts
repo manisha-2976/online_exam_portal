@@ -1,8 +1,10 @@
+export * from './proctoring';
+
 export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'admin' | 'faculty' | 'student';
+  role: 'admin' | 'faculty' | 'student' | 'proctor';
   isActive: boolean;
   department?: string;
   studentId?: string;

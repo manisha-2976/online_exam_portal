@@ -312,32 +312,31 @@ exports.submitExam = async (req, res, next) => {
     let totalMarks = 0;
 
     // Answers are expected as an object: { questionId: selectedOptionIndex }
-   const gradedAnswers = Object.keys(answers).map(questionId => {
-  const question = exam.questions.find(q => q._id.toString() === questionId);
-  if (!question) {
-    console.warn(`Question with ID ${questionId} not found in exam ${exam._id}`);
-    return null;
-  }
+    const gradedAnswers = Object.keys(answers).map(questionId => {
+      const question = exam.questions.find(q => q._id.toString() === questionId);
+      if (!question) {
+        console.warn(`Question with ID ${questionId} not found in exam ${exam._id}`);
+        return null;
+      }
 
-  const questionMarks = question.marks ?? 1; 
-  totalMarks += questionMarks;
+      const questionMarks = question.marks ?? 1;
+      totalMarks += questionMarks;
 
-  const selectedOption = answers[questionId];
+      const selectedOption = answers[questionId];
+      const correctIndex = question.correctAnswer ?? question.correctOption;
+      const isCorrect = (selectedOption === correctIndex) || 
+                        (typeof question.options !== 'undefined' && selectedOption === question.options[correctIndex]);
 
- 
-  const correctOptionText = question.options?.[question.correctOption];
-  const isCorrect = selectedOption === correctOptionText;
+      if (isCorrect) score += questionMarks;
 
-  if (isCorrect) score += questionMarks;
-
-  return {
-    question: questionId,
-    selectedOption,
-    isCorrect,
-    marks: questionMarks,   
-    marksEarned: isCorrect ? questionMarks : 0
-  };
-}).filter(a => a !== null);
+      return {
+        question: questionId,
+        selectedOption,
+        isCorrect,
+        marks: questionMarks,
+        marksEarned: isCorrect ? questionMarks : 0
+      };
+    }).filter(a => a !== null);
 
     // Calculate percentage and determine status before creating Result
     const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;

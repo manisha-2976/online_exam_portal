@@ -17,14 +17,13 @@ const authRoutes = require('./routes/auth.routes');
 const questionRoutes = require('./routes/question.routes');
 const examRoutes = require('./routes/exam.routes');
 const userRoutes = require('./routes/user.routes');
-// const proctoringRoutes = require('./routes/proctoring.routes');
 const adminRoutes = require('./routes/admin.routes');
 const challengeRoutes = require('./routes/challenge.routes');
-
-const proctoringRoutes=require("./routes/proctoringRoutes")
-const roomScanRoutes=require("./routes/roomScanRoutes")
-const faceRoutes=require("./routes/faceRoutes")
-const evidenceRoutes=require("./routes/evidenceRoutes")
+const proctoringRoutes = require('./routes/proctoringRoutes');
+const proctoringLegacyRoutes = require('./routes/proctoring.routes');
+const roomScanRoutes = require('./routes/roomScanRoutes');
+const faceRoutes = require('./routes/faceRoutes');
+const evidenceRoutes = require('./routes/evidenceRoutes');
 
 // Create Express app
 const app = express();
@@ -61,15 +60,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/users', userRoutes);
-// app.use('/api/proctoring', proctoringRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/challenges', challengeRoutes);
-
-app.use("/api/proctoring", proctoringRoutes);
-app.use("/api/room-scan", roomScanRoutes);
-app.use("/api/face", faceRoutes);
-app.use("/api/evidence", evidenceRoutes);
-
+app.use('/api/proctoring', proctoringRoutes);
+app.use('/api/proctoring-legacy', proctoringLegacyRoutes);
+app.use('/api/room-scan', roomScanRoutes);
+app.use('/api/face', faceRoutes);
+app.use('/api/evidence', evidenceRoutes);
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({

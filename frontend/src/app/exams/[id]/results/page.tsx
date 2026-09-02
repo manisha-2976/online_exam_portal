@@ -9,7 +9,8 @@ import { motion } from 'framer-motion';
 import { examApi } from '@/lib/api';
 import BackToDashboard from '@/components/BackToDashboard';
 
-// ... existing code ...
+export default function ExamResults() {
+  const router = useRouter();
 
   return (
     <motion.div
@@ -26,7 +27,10 @@ import BackToDashboard from '@/components/BackToDashboard';
             Back to Exams
           </Button>
         </CardHeader>
-// ... existing code ...
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Exam results summary and score details.</p>
+        </CardContent>
+      </Card>
     </motion.div>
   );
-} 
+}
