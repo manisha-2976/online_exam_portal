@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import BackToDashboard from '@/components/BackToDashboard';
-import { fetchApi } from '@/lib/api';
+import { challengeApi, fetchApi } from '@/lib/api';
 
 interface Challenge {
   _id: string;
@@ -24,12 +24,13 @@ interface Challenge {
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
   status: 'draft' | 'published' | 'archived';
-  createdBy: {
-    _id: string;
-    name: string;
-  };
+  createdBy: { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
+}
+
+interface SubmissionMap {
+  [challengeId: string]: { status: string; score?: number } | null;
 }
 
 export default function ChallengesPage() {
@@ -38,6 +39,7 @@ export default function ChallengesPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [submissions, setSubmissions] = useState<SubmissionMap>({});
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -47,26 +49,56 @@ export default function ChallengesPage() {
     fetchChallenges();
   }, [isAuthenticated]);
 
-  const fetchChallenges = async () => {
-    try {
-      const data = await fetchApi('/api/challenges');
-      setChallenges(
-        data.filter((challenge: Challenge) =>
-          user?.role === 'student' ? challenge.status === 'published' : true
-        )
-      );
-    } catch (error: any) {
-      console.error('Error fetching challenges:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to load challenges. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchChallenges = async () => {
+  //   try {
+  //     const data = await fetchApi('/api/challenges');
+  //     setChallenges(
+  //       data.filter((challenge: Challenge) =>
+  //         user?.role === 'student' ? challenge.status === 'published' : true
+  //       )
+  //     );
+  //   } catch (error: any) {
+  //     console.error('Error fetching challenges:', error);
+  //     toast({
+  //       title: 'Error',
+  //       description: error.message || 'Failed to load challenges. Please try again.',
+  //       variant: 'destructive',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
+
+const fetchChallenges = async () => {
+  try {
+    const data = await fetchApi('/api/challenges');
+    const filtered = data.filter((challenge: Challenge) =>
+      user?.role === 'student' ? challenge.status === 'published' : true
+    );
+    setChallenges(filtered);
+
+    if (user?.role === 'student' && filtered.length > 0) {
+      const results = await Promise.allSettled(
+        filtered.map((c: Challenge) => challengeApi.getStudentSubmission(c._id))
+      );
+      const map: SubmissionMap = {};
+      results.forEach((r, i) => {
+        map[filtered[i]._id] = r.status === 'fulfilled' ? r.value : null;
+      });
+      setSubmissions(map);
+    }
+  } catch (error: any) {
+    console.error('Error fetching challenges:', error);
+    toast({
+      title: 'Error',
+      description: error.message || 'Failed to load challenges. Please try again.',
+      variant: 'destructive',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
       case 'easy':
@@ -167,13 +199,19 @@ export default function ChallengesPage() {
             </CardContent>
 
             <CardFooter className="pt-4">
-              <Button
-                onClick={() => router.push(`/challenges/${challenge._id}`)}
-                className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md"
-              >
-                {user?.role === 'student' ? 'Solve Challenge' : 'View Details'}
-              </Button>
-            </CardFooter>
+  {submissions[challenge._id]?.status === 'completed' ? (
+    <Button disabled className="w-full rounded-xl bg-green-100 text-green-700 cursor-not-allowed">
+      Submitted{typeof submissions[challenge._id]?.score === 'number' ? ` — ${submissions[challenge._id]?.score}%` : ''}
+    </Button>
+  ) : (
+    <Button
+      onClick={() => router.push(`/challenges/${challenge._id}`)}
+      className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md"
+    >
+      {user?.role === 'student' ? 'Solve Challenge' : 'View Details'}
+    </Button>
+  )}
+</CardFooter>
           </Card>
         ))}
       </div>

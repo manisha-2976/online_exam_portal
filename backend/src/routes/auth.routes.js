@@ -11,8 +11,8 @@ const validateRegistration = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
-  body('name').notEmpty().withMessage('Name is required'),
-  body('role').isIn(['student', 'faculty', 'admin']).withMessage('Invalid role')
+  body('name').notEmpty().withMessage('Name is required')
+  
 ];
 
 const validateLogin = [

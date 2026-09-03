@@ -25,6 +25,7 @@ const roomScanRoutes = require('./routes/roomScanRoutes');
 const faceRoutes = require('./routes/faceRoutes');
 const evidenceRoutes = require('./routes/evidenceRoutes');
 
+const { runCode } = require('./utils/codeRunner');
 // Create Express app
 const app = express();
 
@@ -79,6 +80,40 @@ app.get('/api/health', (req, res) => {
 // Rate limiting after routes
 app.use(apiLimiter);
 
+
+// temp code  
+
+app.post('/api/code/run', async (req, res) => {
+  try {
+    const { code, language, stdin } = req.body;
+
+    if (!code || !code.trim()) {
+      return res.status(400).json({ success: false, message: 'Code is required' });
+    }
+    if (!language) {
+      return res.status(400).json({ success: false, message: 'Language is required' });
+    }
+
+    const result = await runCode({ code, language, stdin: stdin || '' });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        output: result.output || '',
+        error: result.error || 'Execution failed.'
+      });
+    }
+
+    return res.json({ success: true, output: result.output });
+  } catch (error) {
+    console.error('Code execution error:', error);
+    return res.status(500).json({
+      success: false,
+      output: '',
+      error: error.message
+    });
+  }
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
   logger.error('Error:', {

@@ -263,7 +263,7 @@ export default function Home() {
           >
             "ExamFlow revolutionized our exam process. It's reliable, secure, and easy to use."
           </Quote>
-          <Author>- Dr. Shreya Mehta, Head of Department</Author>
+          <Author>- Mr. Doddapuneni pavan, Technical Head</Author>
         </Testimonial>
       </main>
       <footer className="border-t border-slate-700 py-6">

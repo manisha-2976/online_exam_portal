@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import BackToDashboard from '@/components/BackToDashboard';
+import { fetchApi } from '@/lib/api';
 
 interface Submission {
   _id: string;
@@ -47,32 +48,100 @@ export default function SubmissionsPage() {
     fetchSubmissions();
   }, [isAuthenticated]);
 
-  const fetchSubmissions = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions${user?.role === 'student' ? '/my' : ''}`, {
-        headers: {
-          'Authorization': `Bearer ${document.cookie.split('=')[1]}`,
-        },
-      });
+  // const fetchSubmissions = async () => {
+  //   try {
+  //     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions${user?.role === 'student' ? '/my' : ''}`, {
+  //       headers: {
+  //         'Authorization': `Bearer ${document.cookie.split('=')[1]}`,
+  //       },
+  //     });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch submissions');
-      }
+  //     if (!response.ok) {
+  //       throw new Error('Failed to fetch submissions');
+  //     }
 
-      const data = await response.json();
-      setSubmissions(data);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load submissions. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     const data = await response.json();
+  //     setSubmissions(data);
+  //   } catch (error) {
+  //     console.error('Error fetching submissions:', error);
+  //     toast({
+  //       title: 'Error',
+  //       description: 'Failed to load submissions. Please try again.',
+  //       variant: 'destructive',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+// const fetchSubmissions = async () => {
+//   try {
+//     const endpoint =
+//       user?.role === 'student'
+//         ? '/api/submissions/my'
+//         : '/api/submissions';
 
+//     const response = await fetch(
+//       `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
+//       {
+//         credentials: 'include',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Accept': 'application/json',
+//         },
+//       }
+//     );
+
+//     if (!response.ok) {
+//       const errorData = await response.json().catch(() => null);
+
+//       throw new Error(
+//         errorData?.message || 'Failed to fetch submissions'
+//       );
+//     }
+
+//     const data = await response.json();
+
+//     setSubmissions(
+//       Array.isArray(data) ? data : []
+//     );
+
+//   } catch (error: any) {
+//     console.error('Error fetching submissions:', error);
+
+//     toast({
+//       title: 'Error',
+//       description:
+//         error?.message ||
+//         'Failed to load submissions. Please try again.',
+//       variant: 'destructive',
+//     });
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+const fetchSubmissions = async () => {
+  try {
+    const endpoint =
+      user?.role === 'student'
+        ? 'challenges/submissions/my'
+        : 'challenges/submissions';
+
+    const data = await fetchApi(endpoint);
+
+    setSubmissions(Array.isArray(data) ? data : []);
+  } catch (error: any) {
+    console.error('Error fetching submissions:', error);
+
+    toast({
+      title: 'Error',
+      description:
+        error?.message || 'Failed to load submissions. Please try again.',
+      variant: 'destructive',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'accepted':
@@ -146,14 +215,14 @@ export default function SubmissionsPage() {
                       <p><strong>Memory Used:</strong> {submission.result.memoryUsed}MB</p>
                     </div>
                   </div>
-                  <div className="mt-4">
+                  {/* <div className="mt-4">
                     <Button
                       variant="outline"
                       onClick={() => router.push(`/challenges/${submission.challenge._id}/submissions/${submission._id}`)}
                     >
                       View Details
                     </Button>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
             ))}
