@@ -48,8 +48,11 @@ class EmailService {
         }
       });
       this.transporter = null;
-      // Rethrow the error to be handled by the calling function
-      throw new Error(`Email service initialization failed: ${error.message}`);
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Email service initialization failed: ${error.message}`);
+      } else {
+        logger.warn('Email service disabled in development mode due to missing SMTP credentials.');
+      }
     }
   }
 
