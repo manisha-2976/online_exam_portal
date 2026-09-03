@@ -33,7 +33,7 @@ import { useToast } from '@/components/ui/use-toast';
 export default function CandidateLiveMonitoringPage() {
   const params = useParams();
   const router = useRouter();
-  const candidateId = params.id as string;
+  const candidateId = (params?.id as string) || '';
   const { toast } = useToast();
 
   const candidate = useProctorStore((state) => state.candidates.find((c) => c._id === candidateId));

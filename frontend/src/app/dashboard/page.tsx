@@ -213,7 +213,7 @@ export default function Dashboard() {
 }
 
 // Reusable Animated Card
-const AnimatedCard = ({ children, delay = 0.3, className = '' }) => (
+const AnimatedCard = ({ children, delay = 0.3, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) => (
   <motion.div
     initial={{ y: 20, opacity: 0 }}
     animate={{ y: 0, opacity: 1 }}
@@ -228,7 +228,7 @@ const AnimatedCard = ({ children, delay = 0.3, className = '' }) => (
 );
 
 // Reusable Soft Gradient Button
-const SoftButton = ({ children, onClick, outline = false }) => (
+const SoftButton = ({ children, onClick, outline = false }: { children: React.ReactNode; onClick?: () => void; outline?: boolean }) => (
   <Button
     onClick={onClick}
     className={`w-full rounded-xl px-4 py-2 font-semibold transition-transform hover:scale-105 hover:shadow-md ${

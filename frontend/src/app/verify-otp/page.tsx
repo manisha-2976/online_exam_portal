@@ -24,7 +24,7 @@ export default function VerifyOTP() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const email = searchParams.get('email');
+  const email = searchParams?.get('email') || '';
 
   useEffect(() => {
     if (!email) {

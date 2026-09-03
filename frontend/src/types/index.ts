@@ -11,6 +11,7 @@ export interface User {
   course?: string;
   semester?: string;
   batch?: string;
+  isEmailVerified?: boolean;
   lastLogin?: Date;
 }
 

@@ -35,7 +35,8 @@ interface Exam {
 
 export default function TakeExam() {
   const params = useParams();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const rawId = params?.id;
+  const id = (Array.isArray(rawId) ? rawId[0] : rawId) || '';
   const router = useRouter();
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuth();
@@ -202,8 +203,10 @@ export default function TakeExam() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleProctoringViolation = async (type: string, details: string) => {
+  const handleProctoringViolation = async (violation: any) => {
     try {
+      const type = violation?.type || 'unknown';
+      const details = violation?.message || violation?.details || JSON.stringify(violation);
       await examApi.recordProctoring(id, {
         type,
         details,
@@ -325,7 +328,7 @@ export default function TakeExam() {
           </Card>
         </div>
         <div className="lg:col-span-1">
-          {proctoringSession && (
+          {proctoringSession && user && (
             <ProctoringSystem
               examId={exam._id}
               userId={user._id}

@@ -11,7 +11,7 @@ import BackToDashboard from '@/components/BackToDashboard';
 
 export default function ExamMonitoring() {
   const params = useParams();
-  const examId = params.id as string;
+  const examId = (params?.id as string) || '';
   const router = useRouter();
 
   const candidates = useProctorStore((state) => state.candidates);

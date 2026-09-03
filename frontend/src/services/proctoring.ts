@@ -78,8 +78,9 @@ export class ProctoringService {
     this.eyeTrackingInterval = setInterval(async () => {
       if (!this.video) return;
 
-      const landmarks = await faceapi.detectFaceLandmarks(this.video);
-      if (landmarks) {
+      const detection = await faceapi.detectSingleFace(this.video).withFaceLandmarks();
+      if (detection) {
+        const landmarks = detection.landmarks as any;
         const leftEye = landmarks.getLeftEye();
         const rightEye = landmarks.getRightEye();
         

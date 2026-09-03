@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  Camera, CheckCircle2, CircleAlert, Loader2, Mic, ScanFace,
+  Camera, CheckCircle2, AlertCircle, Loader2, Mic, ScanFace,
   ShieldCheck, Video, XCircle, RotateCcw, Home,
 } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export default function ChallengeSetupPage() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
 
-  const challengeId = params.id as string;
+  const challengeId = (params?.id as string) || '';
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -373,7 +373,7 @@ export default function ChallengeSetupPage() {
         {errorMessage && (
           <Card className="mb-6 border-red-200 bg-red-50">
             <CardContent className="p-4 flex gap-3 items-start">
-              <CircleAlert className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-semibold text-red-800">Verification issue</p>
                 <p className="text-sm text-red-700 mt-1">{errorMessage}</p>

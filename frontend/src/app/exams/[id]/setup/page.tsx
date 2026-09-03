@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   Camera,
   CheckCircle2,
-  CircleAlert,
+  AlertCircle,
   Loader2,
   Mic,
   ScanFace,
@@ -42,7 +42,7 @@ export default function ExamSetupPage() {
   const { user, loading: authLoading } = useAuth();
 
 //   const examId = params.examId as string;
-const examId = params.id as string; 
+const examId = (params?.id as string) || ''; 
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -697,7 +697,7 @@ const [microphoneStatus, setMicrophoneStatus] = useState<
         {errorMessage && (
           <Card className="mb-6 border-red-200 bg-red-50">
             <CardContent className="p-4 flex gap-3 items-start">
-              <CircleAlert className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
 
               <div>
                 <p className="font-semibold text-red-800">

@@ -103,8 +103,8 @@ export default function AdminDashboard() {
         setStats({
           totalFaculty: facultyRes.data.length,
           totalStudents: studentsRes.data.length,
-          activeExams: facultyRes.data.reduce((acc, f) => acc + (f.createdExams?.filter(e => e.status === 'active').length || 0), 0),
-          totalExams: facultyRes.data.reduce((acc, f) => acc + (f.createdExams?.length || 0), 0)
+          activeExams: facultyRes.data.reduce((acc: number, f: Faculty) => acc + (f.createdExams?.filter((e: Exam) => e.status === 'active').length || 0), 0),
+          totalExams: facultyRes.data.reduce((acc: number, f: Faculty) => acc + (f.createdExams?.length || 0), 0)
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

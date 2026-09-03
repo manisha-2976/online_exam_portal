@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Typography, Alert, CircularProgress } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { useNavigate } from 'react-router-dom';
-import { useSnackbar } from 'notistack';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/use-toast';
 import { api } from '../../lib/api';
 
 interface ProctoringSystemProps {
@@ -18,9 +16,8 @@ const ProctoringSystem: React.FC<ProctoringSystemProps> = ({
   userId,
   onViolation,
 }) => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
+  const router = useRouter();
+  const { toast } = useToast();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -100,10 +97,10 @@ const ProctoringSystem: React.FC<ProctoringSystemProps> = ({
         await api.recordProctoringIncident(examId, data);
       }
       setOfflineData([]);
-      enqueueSnackbar('Offline data synced successfully', { variant: 'success' });
+      toast({ title: 'Success', description: 'Offline data synced successfully' });
     } catch (error) {
       console.error('Error syncing offline data:', error);
-      enqueueSnackbar('Failed to sync offline data', { variant: 'error' });
+      toast({ title: 'Error', description: 'Failed to sync offline data', variant: 'destructive' });
     }
   };
 
@@ -246,10 +243,12 @@ const ProctoringSystem: React.FC<ProctoringSystemProps> = ({
   };
 
   const handleSessionTermination = () => {
-    enqueueSnackbar('Exam session terminated due to multiple violations', {
-      variant: 'error',
+    toast({
+      title: 'Exam Terminated',
+      description: 'Exam session terminated due to multiple violations',
+      variant: 'destructive',
     });
-    navigate('/dashboard');
+    router.push('/dashboard');
   };
 
   // Cleanup on unmount
@@ -270,39 +269,40 @@ const ProctoringSystem: React.FC<ProctoringSystemProps> = ({
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ mt: 2 }}>
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-2">
         {error}
-      </Alert>
+      </div>
     );
   }
 
   if (!permissionGranted) {
     return (
-      <Box sx={{ textAlign: 'center', mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Proctoring System
-        </Typography>
-        <Typography variant="body1" gutterBottom>
+      <div className="text-center mt-4 p-4 border rounded">
+        <h3 className="text-lg font-semibold mb-2">Proctoring System</h3>
+        <p className="text-sm text-gray-600 mb-4">
           Please allow camera and microphone access to continue
-        </Typography>
-        <button onClick={initializeProctoring}>Start Proctoring</button>
-      </Box>
+        </p>
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={initializeProctoring}
+        >
+          Start Proctoring
+        </button>
+      </div>
     );
   }
 
   if (!modelsLoaded) {
     return (
-      <Box sx={{ textAlign: 'center', mt: 4 }}>
-        <CircularProgress />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Loading proctoring models...
-        </Typography>
-      </Box>
+      <div className="text-center mt-4 p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2" />
+        <p className="text-sm text-gray-600">Loading proctoring models...</p>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div className="relative w-full h-full">
       <video
         ref={videoRef}
         autoPlay
@@ -313,56 +313,28 @@ const ProctoringSystem: React.FC<ProctoringSystemProps> = ({
       />
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          padding: 2,
-          borderRadius: 1,
-          color: 'white',
-        }}
-      >
-        <Typography variant="subtitle2">Proctoring Status</Typography>
-        <Typography variant="body2">
-          Face Detected: {faceDetected ? 'Yes' : 'No'}
-        </Typography>
-        <Typography variant="body2">
-          Eyes Visible: {eyeVisible ? 'Yes' : 'No'}
-        </Typography>
-        <Typography variant="body2">
-          Gaze Direction: {gazeDirection}
-        </Typography>
-        <Typography variant="body2">
-          Audio Level: {audioLevel.toFixed(2)}
-        </Typography>
-        <Typography variant="body2">
-          Warnings: {warningCount}/3
-        </Typography>
+      <div className="absolute top-4 right-4 bg-black/70 p-4 rounded text-white text-xs space-y-1">
+        <div className="font-semibold text-sm mb-1">Proctoring Status</div>
+        <div>Face Detected: {faceDetected ? 'Yes' : 'No'}</div>
+        <div>Eyes Visible: {eyeVisible ? 'Yes' : 'No'}</div>
+        <div>Gaze Direction: {gazeDirection}</div>
+        <div>Audio Level: {audioLevel.toFixed(2)}</div>
+        <div>Warnings: {warningCount}/3</div>
         {isOffline && (
-          <Typography variant="body2" color="warning.main">
+          <div className="text-yellow-400">
             Offline Mode - Data will sync when online
-          </Typography>
+          </div>
         )}
-      </Box>
+      </div>
 
       {violations.length > 0 && (
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            left: 16,
-            maxWidth: '300px',
-          }}
-        >
-          <Alert severity="warning">
-            Recent Violation: {violations[violations.length - 1].message}
-          </Alert>
-        </Box>
+        <div className="absolute bottom-4 left-4 max-w-xs bg-yellow-100 border border-yellow-400 text-yellow-800 p-3 rounded text-xs">
+          Recent Violation: {violations[violations.length - 1].message}
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 
-export default ProctoringSystem; 
+export { ProctoringSystem };
+export default ProctoringSystem;

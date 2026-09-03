@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { fetchApi } from '@/lib/api';
 
 interface TestCase {
@@ -34,12 +34,13 @@ interface Submission {
 export default function SubmissionsPage() {
   const params = useParams();
   const id = params?.id as string;
+  const { toast } = useToast();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') {
-      toast.error('Invalid challenge ID');
+      toast({ title: 'Error', description: 'Invalid challenge ID', variant: 'destructive' });
       return;
     }
     fetchSubmissions();
@@ -48,13 +49,13 @@ export default function SubmissionsPage() {
   const fetchSubmissions = async () => {
     try {
       if (!id || typeof id !== 'string') {
-        toast.error('Invalid challenge ID');
+        toast({ title: 'Error', description: 'Invalid challenge ID', variant: 'destructive' });
         return;
       }
       const data = await fetchApi(`api/challenges/${id}/submissions`);
       setSubmissions(data);
     } catch (error) {
-      toast.error('Failed to load submissions');
+      toast({ title: 'Error', description: 'Failed to load submissions', variant: 'destructive' });
       console.error('Error fetching submissions:', error);
     } finally {
       setLoading(false);

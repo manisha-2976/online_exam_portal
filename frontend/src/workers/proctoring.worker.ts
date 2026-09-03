@@ -12,7 +12,7 @@ async function loadModels() {
     modelsLoaded = true;
     postMessage({ type: 'modelsLoaded', success: true });
   } catch (error) {
-    postMessage({ type: 'modelsLoaded', success: false, error: error.message });
+    postMessage({ type: 'modelsLoaded', success: false, error: (error as Error).message });
   }
 }
 
@@ -24,7 +24,7 @@ async function processFrame(imageData: ImageData) {
 
   try {
     const detections = await faceapi.detectAllFaces(
-      imageData,
+      imageData as any,
       new faceapi.TinyFaceDetectorOptions()
     ).withFaceLandmarks().withFaceExpressions();
 

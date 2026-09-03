@@ -39,7 +39,8 @@ interface SubmitResult {
 
 export default function TakeChallengePage() {
   const params = useParams();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const rawId = params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();

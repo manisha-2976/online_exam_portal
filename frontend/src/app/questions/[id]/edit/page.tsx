@@ -46,7 +46,8 @@ export default function EditQuestion() {
 
   const fetchQuestion = async () => {
     try {
-      const data = await questionApi.getById(params.id as string);
+      const id = (params?.id as string) || '';
+      const data = await questionApi.getById(id);
       setFormData({
         text: data.text,
         subject: data.subject,
@@ -71,7 +72,8 @@ export default function EditQuestion() {
     setSaving(true);
 
     try {
-      await questionApi.update(params.id as string, formData);
+      const id = (params?.id as string) || '';
+      await questionApi.update(id, formData);
       toast({
         title: 'Success',
         description: 'Question updated successfully',

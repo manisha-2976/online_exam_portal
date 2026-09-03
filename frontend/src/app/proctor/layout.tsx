@@ -40,7 +40,7 @@ export default function ProctorLayout({ children }: { children: React.ReactNode 
                 </div>
                 {navItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname.startsWith(item.href);
+                  const isActive = pathname ? pathname.startsWith(item.href) : false;
                   return (
                     <Link
                       key={item.href}

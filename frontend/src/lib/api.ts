@@ -208,7 +208,13 @@ export const examApi = {
     getResults: () => fetchApi('/exams/results'),
 
   getStudentSubmission: (examId: string) =>
-    fetchApi(`/exams/${examId}/submission`)
+    fetchApi(`/exams/${examId}/submission`),
+
+  recordProctoring: (id: string, payload: any) =>
+    fetchApi(`/exams/${id}/proctoring`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
 };
 
 export const proctoringApi = {
@@ -243,6 +249,16 @@ export const proctoringApi = {
     }),
 
   getStatus: () => fetchApi('proctoring/session/status'),
+
+  recordProctoringIncident: (examId: string, data: any) =>
+    fetchApi(`proctoring/incident`, {
+      method: 'POST',
+      body: JSON.stringify({ examId, ...data }),
+    }),
+};
+
+export const api = {
+  recordProctoringIncident: proctoringApi.recordProctoringIncident,
 };
 
 
