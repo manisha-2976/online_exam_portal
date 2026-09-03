@@ -20,8 +20,13 @@ async function withFallback<T>(apiCall: () => Promise<T>, fallback: () => T): Pr
   try {
     return await apiCall();
   } catch (err) {
-    console.warn('[proctorApi] Backend endpoint returned error/404. Using dev fallback data.', err);
-    return fallback();
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[proctorApi] Backend endpoint returned error/404. Using dev fallback data.', err);
+      return fallback();
+    }
+    // In production, we NEVER want to show dummy data. Throw the real error.
+    console.error('[proctorApi] Backend endpoint failed in production.', err);
+    throw err;
   }
 }
 
