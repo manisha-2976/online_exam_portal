@@ -98,12 +98,7 @@ resultSchema.virtual('calculatePercentage').get(function() {
   return (this.score / this.totalMarks) * 100;
 });
 
-// Pre-save middleware to update percentage and status
-resultSchema.pre('save', function(next) {
-  this.percentage = this.calculatePercentage;
-  this.status = this.percentage >= 40 ? 'passed' : 'failed';
-  next();
-});
+
 
 const Result = mongoose.model('Result', resultSchema);
 module.exports = Result; 

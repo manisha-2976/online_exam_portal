@@ -1,18 +1,18 @@
-const Question = require('../models/question.model');
 
-// Get all questions
+
+const Question = require('../models/question.model');
+const { SUPPORTED_CODING_LANGUAGES } = require('../models/question.model');
+
 const getQuestions = async (req, res) => {
   try {
-    console.log('Getting questions, query:', req.query);
-    const { subject, difficulty } = req.query;
+    const { subject, difficulty, type } = req.query;
     const query = { isActive: true };
-    
+
     if (subject) query.subject = subject;
     if (difficulty) query.difficulty = difficulty;
+    if (type) query.type = type;
 
     const questions = await Question.find(query).select('-__v');
-    console.log('Questions fetched:', questions.length);
-    
     res.json(questions);
   } catch (error) {
     console.error('Error fetching questions:', error);
@@ -20,19 +20,13 @@ const getQuestions = async (req, res) => {
   }
 };
 
-// Get a single question by ID
 const getQuestionById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Getting question by ID:', id);
-
     const question = await Question.findById(id).select('-__v');
     if (!question) {
-      console.log('Question not found:', id);
       return res.status(404).json({ message: 'Question not found' });
     }
-
-    console.log('Question fetched:', question._id);
     res.json(question);
   } catch (error) {
     console.error('Error fetching question:', error);
@@ -40,73 +34,124 @@ const getQuestionById = async (req, res) => {
   }
 };
 
-// Create a new question
 const createQuestion = async (req, res) => {
   try {
     console.log('Creating question, body:', req.body);
-    const { text, subject, difficulty, options, correctOption } = req.body;
-
-    // Validate input
-    if (!text || !subject || !options || options.length !== 4 || correctOption === undefined) {
-      console.log('Validation failed:', { text, subject, options, correctOption });
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    if (!['easy', 'medium', 'hard'].includes(difficulty)) {
-      console.log('Invalid difficulty:', difficulty);
-      return res.status(400).json({ message: 'Invalid difficulty level' });
-    }
-
-    if (correctOption < 0 || correctOption > 3) {
-      console.log('Invalid correctOption:', correctOption);
-      return res.status(400).json({ message: 'Invalid correct option index' });
-    }
-
-    const question = new Question({
+    const {
+      type = 'mcq',
       text,
       subject,
       difficulty,
       options,
       correctOption,
-      createdBy: req.user._id
-    });
+      supportedLanguages
+    } = req.body;
 
+    if (!text || !subject) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+      return res.status(400).json({ message: 'Invalid difficulty level' });
+    }
+
+    if (!['mcq', 'coding', 'bash'].includes(type)) {
+      return res.status(400).json({ message: 'Invalid question type' });
+    }
+
+    const questionData = {
+      type,
+      text,
+      subject,
+      difficulty,
+      createdBy: req.user._id
+    };
+
+    if (type === 'mcq') {
+      if (!options || options.length !== 4 || correctOption === undefined) {
+        return res.status(400).json({ message: 'MCQ questions require 4 options and a correct option' });
+      }
+      if (correctOption < 0 || correctOption > 3) {
+        return res.status(400).json({ message: 'Invalid correct option index' });
+      }
+      questionData.options = options;
+      questionData.correctOption = correctOption;
+    }
+
+    if (type === 'coding') {
+      // Default: all four languages supported, unless admin explicitly narrows it down.
+      const langs = Array.isArray(supportedLanguages) && supportedLanguages.length > 0
+        ? supportedLanguages
+        : [...SUPPORTED_CODING_LANGUAGES];
+
+      const invalid = langs.filter((l) => !SUPPORTED_CODING_LANGUAGES.includes(l));
+      if (invalid.length > 0) {
+        return res.status(400).json({ message: `Unsupported language(s): ${invalid.join(', ')}` });
+      }
+      questionData.supportedLanguages = langs;
+    }
+    // type === 'bash' → just text/subject/difficulty. Test cases/starter script live on the Challenge.
+
+    const question = new Question(questionData);
     await question.save();
-    console.log('Question created:', question._id);
+    console.log('Question created:', question._id, 'type:', type);
 
     res.status(201).json(question);
   } catch (error) {
     console.error('Error creating question:', error);
-    res.status(500).json({ message: 'Error creating question' });
+    res.status(500).json({ message: error.message || 'Error creating question' });
   }
 };
 
-// Update a question
 const updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { text, subject, difficulty, options, correctOption } = req.body;
+    const { type, text, subject, difficulty, options, correctOption, supportedLanguages } = req.body;
 
     const question = await Question.findById(id);
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
 
-    // Check if question is used in any exam
     if (question.usedInExams.length > 0) {
       return res.status(400).json({ message: 'Cannot update question that has been used in exams' });
     }
 
-    // Update fields
+    const nextType = type || question.type;
+
+    question.type = nextType;
     question.text = text || question.text;
     question.subject = subject || question.subject;
     question.difficulty = difficulty || question.difficulty;
-    question.options = options || question.options;
-    question.correctOption = correctOption !== undefined ? correctOption : question.correctOption;
+
+    if (nextType === 'mcq') {
+      if (options) question.options = options;
+      if (correctOption !== undefined) question.correctOption = correctOption;
+      if (!question.options || question.options.length !== 4 || question.correctOption === undefined) {
+        return res.status(400).json({ message: 'MCQ questions require 4 options and a correct option' });
+      }
+      question.supportedLanguages = undefined;
+    } else if (nextType === 'coding') {
+      const langs = Array.isArray(supportedLanguages) && supportedLanguages.length > 0
+        ? supportedLanguages
+        : (question.supportedLanguages && question.supportedLanguages.length > 0
+            ? question.supportedLanguages
+            : [...SUPPORTED_CODING_LANGUAGES]);
+      const invalid = langs.filter((l) => !SUPPORTED_CODING_LANGUAGES.includes(l));
+      if (invalid.length > 0) {
+        return res.status(400).json({ message: `Unsupported language(s): ${invalid.join(', ')}` });
+      }
+      question.supportedLanguages = langs;
+      question.options = undefined;
+      question.correctOption = undefined;
+    } else {
+      // bash
+      question.options = undefined;
+      question.correctOption = undefined;
+      question.supportedLanguages = undefined;
+    }
 
     await question.save();
-    console.log('Question updated:', question._id);
-
     res.json(question);
   } catch (error) {
     console.error('Error updating question:', error);
@@ -114,24 +159,20 @@ const updateQuestion = async (req, res) => {
   }
 };
 
-// Delete a question
 const deleteQuestion = async (req, res) => {
   try {
     const { id } = req.params;
     const question = await Question.findById(id);
-    
+
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
 
-    // Check if question is used in any exam
     if (question.usedInExams.length > 0) {
       return res.status(400).json({ message: 'Cannot delete question that has been used in exams' });
     }
 
     await Question.findByIdAndDelete(id);
-    console.log('Question deleted:', id);
-
     res.json({ message: 'Question deleted successfully' });
   } catch (error) {
     console.error('Error deleting question:', error);
@@ -145,4 +186,4 @@ module.exports = {
   createQuestion,
   updateQuestion,
   deleteQuestion
-}; 
+};

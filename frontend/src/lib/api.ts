@@ -86,7 +86,7 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
 
 // Auth APIs
 export const authApi = {
-  register: async (userData: { name: string; email: string; password: string; role: string }) => {
+  register: async (userData: { name: string; email: string; password: string; }) => {
     console.log('Registering user:', { ...userData, password: '***' });
     return fetchApi('auth/register', {
       method: 'POST',
@@ -135,29 +135,7 @@ export const authApi = {
   }
 };
 
-// Question APIs
-export const questionApi = {
-  create: (question: any) =>
-    fetchApi('/questions', {
-      method: 'POST',
-      body: JSON.stringify(question)
-    }),
 
-  getAll: () => fetchApi('/questions'),
-
-  getById: (id: string) => fetchApi(`/questions/${id}`),
-
-  update: (id: string, question: any) =>
-    fetchApi(`/questions/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(question)
-    }),
-
-  delete: (id: string) =>
-    fetchApi(`/questions/${id}`, {
-      method: 'DELETE'
-    })
-};
 
 // Exam APIs
 export const examApi = {
@@ -227,6 +205,7 @@ export const examApi = {
       method: 'DELETE',
       body: JSON.stringify({ studentIds })
     }),
+    getResults: () => fetchApi('/exams/results'),
 
   getStudentSubmission: (examId: string) =>
     fetchApi(`/exams/${examId}/submission`)
@@ -287,4 +266,43 @@ export const evidenceApi = {
     }),
 
   getById: (evidenceId: string) => fetchApi(`evidence/${evidenceId}`),
+};
+
+
+// Question APIs
+export const questionApi = {
+  create: (question: any) =>
+    fetchApi('/questions', { method: 'POST', body: JSON.stringify(question) }),
+
+  getAll: (params?: { type?: 'mcq' | 'coding'; subject?: string; difficulty?: string }) => {
+    const qs = params
+      ? '?' + Object.entries(params).filter(([, v]) => v).map(([k, v]) => `${k}=${v}`).join('&')
+      : '';
+    return fetchApi(`/questions${qs}`);
+  },
+
+  getById: (id: string) => fetchApi(`/questions/${id}`),
+  update: (id: string, question: any) =>
+    fetchApi(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(question) }),
+  delete: (id: string) => fetchApi(`/questions/${id}`, { method: 'DELETE' })
+};
+
+// Challenge APIs
+export const challengeApi = {
+  create: (challenge: any) =>
+    fetchApi('/challenges', { method: 'POST', body: JSON.stringify(challenge) }),
+  getAll: () => fetchApi('/challenges'),
+  getById: (id: string) => fetchApi(`/challenges/${id}`),
+  update: (id: string, challenge: any) =>
+    fetchApi(`/challenges/${id}`, { method: 'PUT', body: JSON.stringify(challenge) }),
+  delete: (id: string) => fetchApi(`/challenges/${id}`, { method: 'DELETE' }),
+  start: (id: string, language: string) =>
+    fetchApi(`/challenges/${id}/start`, { method: 'POST', body: JSON.stringify({ language }) }),
+  submit: (id: string, code: string, language: string, extra?: { warnings?: string[]; tabSwitchCount?: number }) =>
+    fetchApi(`/challenges/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ code, language, ...(extra || {}) })
+    }),
+  // Returns the student's latest submission for this challenge, or throws (404) if none exists.
+  getStudentSubmission: (id: string) => fetchApi(`/challenges/${id}/submission`)
 };

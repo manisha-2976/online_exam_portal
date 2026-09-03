@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,9 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import BackToDashboard from '@/components/BackToDashboard';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { fetchApi } from '@/lib/api';
+import { challengeApi } from '@/lib/api';
+import { CheckCircle2 } from 'lucide-react';
 
 interface Challenge {
   _id: string;
@@ -18,86 +19,74 @@ interface Challenge {
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
-  starterCode: string;
+  challengeType?: 'coding' | 'bash';
+  startDate: string;
+  endDate: string;
+  allowedLanguages: string[];
   timeLimit: number;
   memoryLimit: number;
-  createdBy: {
-    _id: string;
-    name: string;
+  proctoring?: {
+    webcamEnabled: boolean;
+    tabSwitchingEnabled: boolean;
+    voiceDetectionEnabled: boolean;
   };
+  createdBy: { _id: string; name: string };
 }
 
-export default function ChallengePage() {
+interface SubmissionInfo {
+  status: 'in-progress' | 'completed';
+  score?: number;
+  passedTestCases?: number;
+  totalTestCases?: number;
+}
+
+export default function ChallengeOverviewPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [code, setCode] = useState('');
-  const [language, setLanguage] = useState('javascript');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
+
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [submission, setSubmission] = useState<SubmissionInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-    fetchChallenge();
+    if (id) fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, id]);
 
-  const fetchChallenge = async () => {
+  const fetchAll = async () => {
     try {
-      const data = await fetchApi(`/api/challenges/${id}`);
+      setLoading(true);
+      const data = await challengeApi.getById(id as string);
       setChallenge(data);
-      setCode(data.starterCode);
+
+      if (user?.role === 'student') {
+        try {
+          const sub = await challengeApi.getStudentSubmission(id as string);
+          setSubmission(sub);
+        } catch {
+          setSubmission(null); // no submission yet — fine
+        }
+      }
     } catch (error: any) {
-      console.error('Error fetching challenge:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to load challenge. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: error.message || 'Failed to load challenge.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    try {
-      const data = await fetchApi('/api/submissions', {
-        method: 'POST',
-        body: JSON.stringify({
-          challengeId: id,
-          code,
-          language,
-        }),
-      });
-      router.push(`/challenges/${id}/submissions/${data._id}`);
-    } catch (error: any) {
-      console.error('Error submitting solution:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to submit solution. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
-      case 'easy':
-        return 'bg-green-100 text-green-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'hard':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'easy': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'hard': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -106,7 +95,7 @@ export default function ChallengePage() {
       <div className="container mx-auto px-4 py-8">
         <BackToDashboard />
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
         </div>
       </div>
     );
@@ -118,95 +107,79 @@ export default function ChallengePage() {
         <BackToDashboard />
         <div className="text-center py-12">
           <h3 className="text-lg font-medium text-gray-900">Challenge not found</h3>
-          <Button
-            className="mt-4"
-            onClick={() => router.push('/challenges')}
-          >
-            Back to Challenges
-          </Button>
+          <Button className="mt-4" onClick={() => router.push('/challenges')}>Back to Challenges</Button>
         </div>
       </div>
     );
   }
 
+  const alreadySubmitted = submission?.status === 'completed';
+
   return (
     <div className="container mx-auto px-4 py-8">
       <BackToDashboard />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Challenge Details */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>{challenge.title}</CardTitle>
-                <div className="flex gap-2 mt-2">
-                  <Badge className={getDifficultyColor(challenge.difficulty)}>
-                    {challenge.difficulty}
-                  </Badge>
-                  <Badge variant="outline">{challenge.category}</Badge>
-                </div>
+      <Card className="max-w-3xl mx-auto">
+        <CardHeader>
+          <div className="flex justify-between items-start flex-wrap gap-3">
+            <div>
+              <CardTitle className="text-2xl">{challenge.title}</CardTitle>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <Badge className={getDifficultyColor(challenge.difficulty)}>{challenge.difficulty}</Badge>
+                <Badge variant="outline">{challenge.category}</Badge>
+                <Badge variant="outline" className="capitalize">{challenge.challengeType || 'coding'}</Badge>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="prose max-w-none">
-              <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <div className="whitespace-pre-wrap">{challenge.description}</div>
-              
-              <div className="mt-4 text-sm text-gray-600">
-                <p><strong>Time Limit:</strong> {challenge.timeLimit}ms</p>
-                <p><strong>Memory Limit:</strong> {challenge.memoryLimit}MB</p>
-                <p><strong>Created by:</strong> {challenge.createdBy.name}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {alreadySubmitted && (
+              <Badge className="bg-green-100 text-green-800 flex items-center gap-1 px-3 py-1">
+                <CheckCircle2 className="h-4 w-4" />
+                Submitted{typeof submission?.score === 'number' ? ` — ${submission.score}%` : ''}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
 
-        {/* Code Editor */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Solution</CardTitle>
-              <Select
-                value={language}
-                onValueChange={setLanguage}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="javascript">JavaScript</SelectItem>
-                  <SelectItem value="python">Python</SelectItem>
-                  <SelectItem value="java">Java</SelectItem>
-                  <SelectItem value="cpp">C++</SelectItem>
-                </SelectContent>
-              </Select>
+        <CardContent>
+          <div className="prose max-w-none whitespace-pre-wrap">{challenge.description}</div>
+
+          <div className="mt-6 text-sm text-gray-600 space-y-2">
+            <p><strong>Time Limit:</strong> {challenge.timeLimit}ms</p>
+            <p><strong>Memory Limit:</strong> {challenge.memoryLimit}MB</p>
+            <p>
+              <strong>Allowed Languages:</strong>{' '}
+              {challenge.allowedLanguages?.join(', ')}
+            </p>
+            <p><strong>Created by:</strong> {challenge.createdBy?.name || 'Admin'}</p>
+            {challenge.proctoring && (
+              <p>
+                <strong>Proctoring:</strong>{' '}
+                {[
+                  challenge.proctoring.webcamEnabled && 'Webcam',
+                  challenge.proctoring.tabSwitchingEnabled && 'Tab-switch detection',
+                  challenge.proctoring.voiceDetectionEnabled && 'Voice detection',
+                ].filter(Boolean).join(', ') || 'None'}
+              </p>
+            )}
+          </div>
+
+          {user?.role === 'student' && (
+            <div className="mt-8">
+              {alreadySubmitted ? (
+                <div className="p-4 rounded-md bg-green-50 text-green-700 text-sm">
+                  You've already submitted this challenge
+                  {typeof submission?.passedTestCases === 'number'
+                    ? ` (${submission.passedTestCases}/${submission.totalTestCases} test cases passed).`
+                    : '.'}{' '}
+                  It can't be reopened.
+                </div>
+              ) : (
+                <Button className="w-full" onClick={() => router.push(`/challenges/${id}/setup`)}>
+                  Start Challenge
+                </Button>
+              )}
             </div>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="font-mono min-h-[400px] resize-none"
-              placeholder="Write your solution here..."
-            />
-            <div className="flex justify-end mt-4 space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => setCode(challenge.starterCode)}
-              >
-                Reset Code
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={submitting}
-              >
-                {submitting ? 'Submitting...' : 'Submit Solution'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-} 
+}

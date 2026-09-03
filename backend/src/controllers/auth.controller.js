@@ -9,10 +9,87 @@ const logger = require('../utils/logger');
 // Password validation regex
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
+
+//   try {
+//     const { name, email, password, role } = req.body;
+//     logger.info('Registration attempt:', { email, role });
+
+//     // Validate password strength
+//     if (!PASSWORD_REGEX.test(password)) {
+//       return res.status(400).json({
+//         message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+//       });
+//     }
+
+//     // Check if user already exists
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       logger.warn('Registration failed: Email already exists', { email });
+//       return res.status(400).json({ message: 'Email already registered' });
+//     }
+
+//     // Generate OTP
+//     const otp = generateOTP();
+//     logger.info('Generated OTP for registration:', { email, otp });
+
+//     // Create new user
+//     const user = new User({
+//       name,
+//       email,
+//       password,
+//       role: role || 'student',
+//       otp: {
+//         token: otp,
+//         expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+//       }
+//     });
+
+//     await user.save();
+//     logger.info('User created successfully:', { userId: user._id, email });
+
+//     // Send OTP via email
+//     let emailSent = false;
+//     try {
+//       emailSent = await emailService.sendOTPEmail(email, otp);
+//     } catch (emailError) {
+//       logger.error('Failed to send OTP email:', { email, error: emailError });
+//       // In development, continue without email
+//       if (process.env.NODE_ENV !== 'production') {
+//         emailSent = true;
+//       }
+//     }
+
+//     if (!emailSent && process.env.NODE_ENV === 'production') {
+//       // In production, we need to send the email
+//       await User.findByIdAndDelete(user._id); // Rollback user creation
+//       return res.status(500).json({ message: 'Error sending verification email. Please try again.' });
+//     }
+
+//     // Prepare response
+//     const response = {
+//       message: 'Registration successful. Please check your email for OTP.',
+//       userId: user._id,
+//       email
+//     };
+
+//     // In development, always include OTP
+//     if (process.env.NODE_ENV === 'development') {
+//       response.otp = otp;
+//     }
+
+//     res.status(201).json(response);
+//   } catch (error) {
+//     logger.error('Registration error:', error);
+//     res.status(500).json({ 
+//       message: 'Error during registration',
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// };
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    logger.info('Registration attempt:', { email, role });
+    const { name, email, password } = req.body; // role no longer accepted from client
+    logger.info('Registration attempt:', { email });
 
     // Validate password strength
     if (!PASSWORD_REGEX.test(password)) {
@@ -28,6 +105,16 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    // Determine role: admin only if BOTH email and password match env admin credentials
+    const isAdminSignup =
+      email === process.env.ADMIN_EMAIL &&
+      password === process.env.ADMIN_PASSWORD;
+    const role = isAdminSignup ? 'admin' : 'student';
+
+    if (isAdminSignup) {
+      logger.info('Admin account being created via registration:', { email });
+    }
+
     // Generate OTP
     const otp = generateOTP();
     logger.info('Generated OTP for registration:', { email, otp });
@@ -37,7 +124,7 @@ const register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'student',
+      role,
       otp: {
         token: otp,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
@@ -45,7 +132,7 @@ const register = async (req, res) => {
     });
 
     await user.save();
-    logger.info('User created successfully:', { userId: user._id, email });
+    logger.info('User created successfully:', { userId: user._id, email, role });
 
     // Send OTP via email
     let emailSent = false;
@@ -53,26 +140,22 @@ const register = async (req, res) => {
       emailSent = await emailService.sendOTPEmail(email, otp);
     } catch (emailError) {
       logger.error('Failed to send OTP email:', { email, error: emailError });
-      // In development, continue without email
       if (process.env.NODE_ENV !== 'production') {
         emailSent = true;
       }
     }
 
     if (!emailSent && process.env.NODE_ENV === 'production') {
-      // In production, we need to send the email
-      await User.findByIdAndDelete(user._id); // Rollback user creation
+      await User.findByIdAndDelete(user._id);
       return res.status(500).json({ message: 'Error sending verification email. Please try again.' });
     }
 
-    // Prepare response
     const response = {
       message: 'Registration successful. Please check your email for OTP.',
       userId: user._id,
       email
     };
 
-    // In development, always include OTP
     if (process.env.NODE_ENV === 'development') {
       response.otp = otp;
     }
@@ -80,7 +163,7 @@ const register = async (req, res) => {
     res.status(201).json(response);
   } catch (error) {
     logger.error('Registration error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error during registration',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

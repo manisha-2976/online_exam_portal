@@ -62,7 +62,7 @@ export default function CreateExam() {
       return;
     }
 
-    if (!authLoading && user?.role !== 'faculty') {
+    if (!authLoading && user?.role !== 'admin') {
       toast({
         title: 'Access Denied',
         description: 'Only faculty members can create exams',
